@@ -26,9 +26,14 @@ AMBRE      = 'B26A00'
 DH    = '#,##0 "DH";[Red]-#,##0 "DH";"–"'
 DH2   = '#,##0.00 "DH";[Red]-#,##0.00 "DH";"–"'
 NBR   = '#,##0;[Red]-#,##0;"–"'
+# Sur fond fonce (lignes de total), le [Red] du format serait illisible :
+# on garde la meme presentation sans forcer la couleur.
+DH_TOT = '#,##0 "DH";-#,##0 "DH";"–"'
 PCT   = '0.0%;[Red]-0.0%;"–"'
 DATE  = 'DD/MM/YYYY'
-MOIS  = '[$-40C]MMMM YYYY'  # force le nom du mois en francais
+MOIS  = '[$-40C]MMMM YYYY'          # force le nom du mois en francais
+JOUR_LONG = '[$-40C]dddd D MMMM YYYY'
+JOUR_CRT  = '[$-40C]ddd DD/MM'
 
 # Bordures --------------------------------------------------------------
 def _s(color, style='thin'):
