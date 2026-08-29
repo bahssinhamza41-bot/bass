@@ -2,7 +2,9 @@
 
 Classeurs Excel de gestion pour le **Café Victor Hugo** (Mohammedia, Maroc).
 
-**Fichier principal : [`CAISSE_VICTOR_HUGO_08-2026.xlsx`](CAISSE_VICTOR_HUGO_08-2026.xlsx)**
+**Classeurs du mois :**
+- [`CAISSE_VICTOR_HUGO_08-2026.xlsx`](CAISSE_VICTOR_HUGO_08-2026.xlsx) — août 2026, rempli
+- [`CAISSE_VICTOR_HUGO_09-2026.xlsx`](CAISSE_VICTOR_HUGO_09-2026.xlsx) — septembre 2026, vide, prêt à remplir
 
 ## Le principe
 
@@ -52,15 +54,27 @@ devient automatiquement la caisse de la veille sur la feuille du lendemain.
 > qui permet à CHARGES FIXES de totaliser chaque poste sur les 31 jours.
 > N'en changez pas l'ordre.
 
-## Changer de mois
+## Créer le classeur d'un nouveau mois
 
-1. Faites une copie du fichier ;
+Le plus simple — régénérer un classeur vide :
+
+```bash
+python3 src/build.py --mois 10 --annee 2026 --caisse <solde de fin septembre>
+```
+
+Ou à la main, sans Python :
+
+1. faites une copie d'un classeur existant ;
 2. dans **RÉCAP DU JOURNAL**, changez `Mois` (et `Année` si besoin) ;
 3. mettez `Caisse au 1er du mois` au solde de fin du mois précédent ;
 4. effacez les montants des feuilles 01 à 31.
 
-Les dates, les jours de la semaine et le nombre de jours du mois suivent seuls
-(testé : en passant à septembre, la feuille 31 se vide d'elle-même).
+Les dates, les jours de la semaine et le nombre de jours suivent seuls. Un mois
+de moins de 31 jours neutralise les feuilles en trop : la feuille affiche
+« — ce jour n'existe pas dans le mois — » et sa ligne disparaît du récap.
+
+Le **report de caisse** est le seul lien entre deux mois : le solde de fin de
+septembre devient le `Caisse au 1er du mois` d'octobre.
 
 ## Données reprises de l'ancien classeur
 
@@ -108,9 +122,17 @@ commande de matériel d'irrigation. Conservée pour ne pas perdre ces données.
 
 ```bash
 pip install openpyxl
-python3 src/build.py          # CAISSE_VICTOR_HUGO_08-2026.xlsx
+
+# août 2026, avec les données reprises de l'ancien classeur
+python3 src/build.py --mois 8 --annee 2026 --caisse 0
+
+# septembre 2026, vide, ouvert sur le solde de fin d'août
+python3 src/build.py --mois 9 --annee 2026 --caisse 4223
+
 python3 src/build_annexe.py   # ANNEXE_ASSOCIES.xlsx
 ```
+
+`--vide` force un classeur vide même pour août 2026.
 
 - `src/data_source.py` — les données reprises de l'ancien classeur
 - `src/theme.py` — charte graphique (palette, polices, briques de mise en page)

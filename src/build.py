@@ -27,10 +27,31 @@ from openpyxl.chart.marker import Marker
 from openpyxl.drawing.line import LineProperties
 from openpyxl.chart.shapes import GraphicalProperties
 
+import argparse
+
 import theme as T
 import data_source as D
 
-ANNEE, MOIS_N, NB_JOURS = 2026, 8, 31
+ap = argparse.ArgumentParser(
+    description="Construit le classeur de caisse d'un mois.")
+ap.add_argument('--annee', type=int, default=2026)
+ap.add_argument('--mois', type=int, default=8, choices=range(1, 13), metavar='1-12')
+ap.add_argument('--caisse', type=float, default=0,
+                help="Solde d'especes le matin du 1er du mois "
+                     "(= solde de fin du mois precedent).")
+ap.add_argument('--vide', action='store_true',
+                help="Ne transfere aucune donnee, meme pour aout 2026.")
+args = ap.parse_args()
+
+ANNEE, MOIS_N = args.annee, args.mois
+CAISSE_DEPART = args.caisse
+# Les 27 journees reprises de l ancien classeur ne concernent qu aout 2026.
+TRANSFERER = (ANNEE, MOIS_N) == (2026, 8) and not args.vide
+
+# Toujours 31 feuilles : les jours qui n existent pas dans le mois se
+# neutralisent d eux-memes, ce qui permet de reutiliser le meme classeur
+# pour un mois de 28, 30 ou 31 jours.
+NB_JOURS = 31
 JOURS = [f'{d:02d}' for d in range(1, NB_JOURS + 1)]
 
 # --- Geometrie d une feuille jour ---------------------------------------
@@ -148,7 +169,8 @@ def construire_jour(num):
     larg(ws, {'A': 3, 'B': 26, 'C': 14, 'D': 3, 'E': 26, 'F': 14, 'G': 3,
               'H': 26, 'I': 14, 'J': 3, 'K': 26, 'L': 14, 'M': 3})
 
-    date_f = (f'=IF({num}>{RCP}!{R_NBJ},"",'
+    date_f = (f'=IF({num}>{RCP}!{R_NBJ},'
+              f'"— ce jour n\'existe pas dans le mois —",'
               f'DATE({RCP}!{R_AN},{RCP}!{R_MOIS},{num}))')
 
     ws.merge_cells('A1:M1')
@@ -368,7 +390,7 @@ for num in range(1, NB_JOURS + 1):
     feuilles_jour[num] = ws
 
 nb_lignes_transferees = 0
-for jour, tiers, montant, bloc in D.DEPENSES:
+for jour, tiers, montant, bloc in (D.DEPENSES if TRANSFERER else []):
     ws = feuilles_jour[jour]
     if bloc == 'A':
         cl, cm = COL['achat']
@@ -385,7 +407,7 @@ for jour, tiers, montant, bloc in D.DEPENSES:
         ws.cell(LIG_VIR[MAP_VIR[tiers]], COL['virement'][1], montant)
     nb_lignes_transferees += 1
 
-for jour, recette in D.RECETTES.items():
+for jour, recette in (D.RECETTES.items() if TRANSFERER else []):
     feuilles_jour[jour].cell(L_REC, 3, recette)
     nb_lignes_transferees += 1
 
@@ -404,7 +426,7 @@ T.bandeau(rc, 1, 1, 14, 'RÉCAP DU JOURNAL',
 reglages = [
     ('Année', ANNEE, '0'),
     ('Mois (1 à 12)', MOIS_N, '0'),
-    ('Caisse au 1er du mois', 0, T.DH),
+    ('Caisse au 1er du mois', CAISSE_DEPART, T.DH),
     ('Objectif recette / jour', 2200, T.DH),
 ]
 for i, (lib, val, fmt) in enumerate(reglages):
@@ -490,7 +512,7 @@ for col in range(3, 13):
     L = GL(col)
     cell = rc.cell(RC_T, col, f'=SUM({L}{RC_1}:{L}{RC_N})')
     cell.number_format = T.DH; cell.alignment = T.DROITE
-rc.cell(RC_T, 13, f'=$M{RC_N}')
+rc.cell(RC_T, 13, f'=INDEX($M${RC_1}:$M${RC_N},{R_NBJ})')
 rc.cell(RC_T, 14, f'=SUMIF($F${RC_1}:$F${RC_N},">0",$N${RC_1}:$N${RC_N})')
 for col in (13, 14):
     rc.cell(RC_T, col).number_format = T.DH; rc.cell(RC_T, col).alignment = T.DROITE
@@ -649,14 +671,31 @@ for i, (lib, f, coul) in enumerate(synthese):
 cf.conditional_formatting.add(f'C{SYN_1 + 6}', CellIsRule(
     operator='lessThan', formula=['0'], font=T.police(12, True, T.ROUGE)))
 
-SEUIL_1 = SYN_1 + 9
-T.titre_section(cf, SEUIL_1 - 1, 2, 6, 'LE CAFÉ COUVRE-T-IL SES CHARGES ?')
+SEUIL_1 = SYN_1 + 10
+T.titre_section(cf, SEUIL_1 - 2, 2, 6, 'LE CAFÉ COUVRE-T-IL SES CHARGES ?')
 NBJ_SAISIS = f"COUNTIF('RECAP DU JOURNAL'!$F${RC_1}:$F${RC_N},\">0\")"
+
+BUD_ACHATS = SEUIL_1 - 1
+cf.cell(BUD_ACHATS, 2, 'Budget achats de marchandise (par mois)').font = \
+    T.police(10, True, T.ESPRESSO)
+cf.cell(BUD_ACHATS, 2).alignment = T.GAUCHE
+_b = cf.cell(BUD_ACHATS, 3, 20500)
+_b.number_format = T.DH; _b.alignment = T.DROITE
+_b.font = T.police(11, True, T.BLEU); _b.fill = T.fond(T.JAUNE)
+_b.border = T.BORD_BOITE
+_b.comment = Comment(
+    "Ce que vous prévoyez de dépenser en marchandise sur le mois (café, eau, "
+    "épicerie, boulangerie, nettoyage). La valeur par défaut, 20 500 DH, vient de "
+    "l’ancien classeur (feuille CHARGE). Attention : en août 2026 le réalisé a été "
+    "de 24 529 DH, nettoyage compris. Ce chiffre ne sert qu’au seuil de rentabilité "
+    "ci-dessous, mais il le change beaucoup : ajustez-le à votre réalité.",
+    'Système', height=140, width=290)
+
 seuils = [
     ('Recette minimum par jour (seuil de rentabilité)',
-     f'=IFERROR(($C${CF_TOT_FIXE}+$C${CF_TOT_SAL}+$C${SYN_1}+$C${SYN_1 + 3})/30,0)', T.ROUGE,
-     "Total des charges du mois (budget) divisé par 30 jours. En dessous de ce "
-     "chiffre de recette, la journée est déficitaire."),
+     f'=IFERROR(($C${CF_TOT_FIXE}+$C${CF_TOT_SAL}+$C${BUD_ACHATS})/30,0)', T.ROUGE,
+     "Charges fixes + salaires + achats de marchandise, en budget, divisés par "
+     "30 jours. En dessous de ce chiffre de recette, la journée est déficitaire."),
     ('Recette moyenne par jour, ce mois',
      f"=IFERROR('RECAP DU JOURNAL'!$F${RC_T}/{NBJ_SAISIS},0)", T.VERT,
      "Recette du mois divisée par le nombre de jours réellement saisis."),
