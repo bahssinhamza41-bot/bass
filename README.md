@@ -1,3 +1,15 @@
+# Systèmes de caisse Excel
+
+Ce dépôt contient deux systèmes de gestion Excel, bâtis sur le même principe :
+un classeur par mois, une feuille par jour, et tout le reste qui se calcule seul.
+
+| Affaire | Classeurs | Documentation |
+|---|---|---|
+| **Café Victor Hugo** — Mohammedia | `CAISSE_VICTOR_HUGO_*.xlsx` | ci-dessous |
+| **Paradise Aluminium SARL** — Casablanca | `CAISSE_PARADISE_ALUMINIUM_*.xlsx` | [`paradise/README.md`](paradise/README.md) |
+
+---
+
 # Café Victor Hugo — Système de caisse
 
 Classeurs Excel de gestion pour le **Café Victor Hugo** (Mohammedia, Maroc).
