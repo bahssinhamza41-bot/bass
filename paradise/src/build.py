@@ -22,7 +22,6 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter as GL
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
-from openpyxl.comments import Comment
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.chart import BarChart, LineChart, PieChart, Reference
 from openpyxl.chart.label import DataLabelList
@@ -518,15 +517,15 @@ def construire_jour(num):
         f'J{L_ACH_1}:J{L_ACH_N}',
         CellIsRule(operator='greaterThan', formula=['0'],
                    font=T.police(10, True, T.ROUGE),
-                   fill=T.fond(T.ROUGE_CLAIR)))
+                   fill=T.fond_mfc(T.ROUGE_CLAIR)))
     for ref in (f'D{L_ECART}', f'G{L_ECART}'):
         ws.conditional_formatting.add(
             ref, CellIsRule(operator='notEqual', formula=['0'],
-                            fill=T.fond(T.ROUGE_CLAIR)))
+                            fill=T.fond_mfc(T.ROUGE_CLAIR)))
     for ref in (f'D{L_SOIR}', f'G{L_SOIR}', f'J{L_C1+2}'):
         ws.conditional_formatting.add(
             ref, CellIsRule(operator='lessThan', formula=['0'],
-                            fill=T.fond(T.ROUGE)))
+                            fill=T.fond_mfc(T.ROUGE)))
 
     # --- Listes déroulantes ------------------------------------------------
     dv = DataValidation(type='list', formula1=f'={L_FRS}', allow_blank=True)
@@ -541,9 +540,6 @@ def construire_jour(num):
     ws.add_data_validation(dv2)
     dv2.add(f'F{L_ENC_1}:F{L_ENC_N}')
 
-    ws.cell(L_COMPTE, 4).comment = Comment(
-        "Comptez les espèces dans la caisse PARADISE le soir et notez le "
-        "montant ici. L'écart se calcule tout seul.", 'Paradise Aluminium', 260, 90)
     zone_impression(ws, f'A1:N{L_FIN}', une_page=True)
     return ws
 
@@ -671,7 +667,7 @@ T.note(rc, L_RC_TOT + 1, 2, 17,
 rc.conditional_formatting.add(
     f'H{L_RC_1}:H{L_RC_N}',
     CellIsRule(operator='greaterThan', formula=['0'],
-               fill=T.fond(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
+               fill=T.fond_mfc(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
 rc.conditional_formatting.add(
     f'M{L_RC_1}:M{L_RC_N}',
     CellIsRule(operator='greaterThan', formula=['0'],
@@ -679,11 +675,11 @@ rc.conditional_formatting.add(
 rc.conditional_formatting.add(
     f'Q{L_RC_1}:Q{L_RC_N}',
     FormulaRule(formula=[f'AND($B{L_RC_1}<>"",$Q{L_RC_1}<>0)'],
-                fill=T.fond(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
+                fill=T.fond_mfc(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
 for ref in (f'N{L_RC_1}:N{L_RC_N}', f'O{L_RC_1}:O{L_RC_N}', f'P{L_RC_1}:P{L_RC_N}'):
     rc.conditional_formatting.add(
         ref, CellIsRule(operator='lessThan', formula=['0'],
-                        fill=T.fond(T.ROUGE), font=T.police(10, True, T.BLANC)))
+                        fill=T.fond_mfc(T.ROUGE), font=T.police(10, True, T.BLANC)))
 # Colonnes de service, masquées : elles renvoient #N/A pour les jours qui
 # n'existent pas dans le mois, ce qui évite aux graphiques de retomber à zéro
 # à la fin d'un mois de 28 ou 30 jours.
@@ -806,7 +802,7 @@ for col in ('J', 'L', 'M'):
 fo.conditional_formatting.add(
     f'H{L_FO_1}:H{L_FO_N}',
     CellIsRule(operator='greaterThan', formula=['0'],
-               fill=T.fond(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
+               fill=T.fond_mfc(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
 fo.conditional_formatting.add(
     f'C{L_FO_1}:C{L_FO_N}',
     CellIsRule(operator='greaterThan', formula=['0'],
@@ -835,7 +831,7 @@ T.titre_section(ec, 3, 2, 9, "OÙ NOUS EN SOMMES")
 CARTES_EC = [
     ('TOTAL RESTANT DÛ', f'=SUM({PL_F})', T.MARINE),
     ('DONT EN RETARD', f'=SUMIF({PL_H},"EN RETARD",{PL_F})', T.ROUGE),
-    ('À ÉCHOIR SOUS 30 JOURS', f'=SUMIF({PL_H},"À ÉCHOIR ≤ 30 J",{PL_F})', T.AMBRE),
+    ('À ÉCHOIR SOUS 30 JOURS', f'=SUMIF({PL_H},"À ÉCHOIR SOUS 30 J",{PL_F})', T.AMBRE),
     ('DÉJÀ PAYÉ (cumul)', f'=SUM({PL_G})', T.VERT),
 ]
 for i, (lib, f, coul) in enumerate(CARTES_EC):
@@ -867,7 +863,7 @@ ETAT = ('=IF(AND($B{r}="",$D{r}=""),"",'
         'IF($F{r}<=0,"PAYÉ",'
         'IF($B{r}="","SANS DATE",'
         'IF($B{r}<TODAY(),"EN RETARD",'
-        'IF($B{r}<=TODAY()+30,"À ÉCHOIR ≤ 30 J","À VENIR")))))')
+        'IF($B{r}<=TODAY()+30,"À ÉCHOIR SOUS 30 J","À VENIR")))))')
 
 import datetime as _dt
 lignes_ech = D.ECHEANCIER if REPRENDRE_ECH else []
@@ -897,13 +893,13 @@ for i in range(NB_ECH):
 
 for texte, remplissage, encre in (
         ('EN RETARD', T.ROUGE_CLAIR, T.ROUGE),
-        ('À ÉCHOIR ≤ 30 J', T.AMBRE_CLAIR, T.AMBRE),
+        ('À ÉCHOIR SOUS 30 J', T.AMBRE_CLAIR, T.AMBRE),
         ('PAYÉ', T.VERT_CLAIR, T.VERT),
         ('SANS DATE', T.FOND_2, T.GRIS)):
     ec.conditional_formatting.add(
         f'B{L_EC_1}:I{L_EC_N}',
         FormulaRule(formula=[f'$H{L_EC_1}="{texte}"'],
-                    fill=T.fond(remplissage), font=T.police(9.5, True, encre),
+                    fill=T.fond_mfc(remplissage), font=T.police(9.5, True, encre),
                     stopIfTrue=False))
 
 ec.auto_filter.ref = f'B{L_EC_1 - 1}:I{L_EC_N}'
@@ -959,7 +955,7 @@ def table_budget(ligne_titre, titre, postes, ligne_source_debut, ligne_tot_jour)
     cf.conditional_formatting.add(
         f'D{r0}:D{rt - 1}',
         FormulaRule(formula=[f'AND($C{r0}>0,$D{r0}>$C{r0})'],
-                    fill=T.fond(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
+                    fill=T.fond_mfc(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
     return rt
 
 
@@ -999,7 +995,7 @@ for i, (lib, f, coul) in enumerate(SYNTHESE):
 cf.conditional_formatting.add(
     f'F{L_SYN + 8}',
     CellIsRule(operator='lessThan', formula=['0'],
-               fill=T.fond(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
+               fill=T.fond_mfc(T.ROUGE_CLAIR), font=T.police(10, True, T.ROUGE)))
 T.note(cf, L_SYN + 10, 2, 6,
        "Le budget est une colonne à vous : ajustez-le une fois pour toutes, il sert "
        "de repère tous les mois. Un poste dépassé se colore en rouge de lui-même.", 30)
@@ -1278,7 +1274,6 @@ wb.active = 0
 
 wb.properties.title = f'Caisse Paradise Aluminium — {MOIS_FR[MOIS_N]} {ANNEE}'
 wb.properties.creator = 'PARADISE ALUMINIUM SARL'
-wb.properties.company = 'PARADISE ALUMINIUM SARL'
 wb.properties.description = (
     "Journal de caisse : fournisseurs, caisse PARADISE, caisse ZENATA, "
     "charges fixes, échéancier des chèques et des effets.")

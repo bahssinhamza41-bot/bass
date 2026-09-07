@@ -45,8 +45,18 @@ JOUR_CRT  = '[$-40C]ddd DD/MM'
 
 
 # Bordures -------------------------------------------------------------
+def argb(color):
+    """Couleur opaque sur 8 chiffres, comme Excel les ecrit lui-meme.
+
+    openpyxl prefixe les couleurs a six chiffres par un canal alpha nul
+    (00RRGGBB, donc transparent). Excel l'ignore, mais d'autres lecteurs
+    (Numbers, visionneuses mobiles) s'y perdent : on force FF.
+    """
+    return color if len(color) == 8 else 'FF' + color
+
+
 def _s(color, style='thin'):
-    return Side(style=style, color=color)
+    return Side(style=style, color=argb(color))
 
 
 BORD_LEGER = Border(left=_s(BORDURE), right=_s(BORDURE),
@@ -58,11 +68,20 @@ SANS       = Border()
 
 
 def police(size=10, bold=False, color=ENCRE, italic=False):
-    return Font(name=FONT, size=size, bold=bold, color=color, italic=italic)
+    return Font(name=FONT, size=size, bold=bold, color=argb(color), italic=italic)
 
 
 def fond(color):
-    return PatternFill('solid', fgColor=color)
+    return PatternFill('solid', fgColor=argb(color))
+
+
+def fond_mfc(color):
+    """Remplissage pour une mise en forme conditionnelle.
+
+    Dans un bloc <dxf>, Excel lit la couleur dans bgColor, pas dans fgColor :
+    un solide fgColor ne s'affiche pas.
+    """
+    return PatternFill(bgColor=argb(color))
 
 
 CENTRE   = Alignment(horizontal='center', vertical='center', wrap_text=True)
